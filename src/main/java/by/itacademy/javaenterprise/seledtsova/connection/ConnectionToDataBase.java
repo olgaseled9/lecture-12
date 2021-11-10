@@ -7,10 +7,9 @@ import org.slf4j.LoggerFactory;
 import javax.sql.DataSource;
 import java.util.ResourceBundle;
 
-public class PoolConnectionToDataBase {
+public class ConnectionToDataBase {
 
-    private static final Logger logger = LoggerFactory.getLogger(PoolConnectionToDataBase.class);
-
+    private static final Logger logger = LoggerFactory.getLogger(ConnectionToDataBase.class);
     private static BasicDataSource basicDataSource;
 
     static {
@@ -35,5 +34,8 @@ public class PoolConnectionToDataBase {
 
     public static DataSource getDataSource() {
         return basicDataSource;
+    }
+
+    public void setBasicDataSource(BasicDataSource basicDataSource) {
     }
 }

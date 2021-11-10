@@ -1,8 +1,8 @@
-package by.itacademy.javaenterprise.seledtsova.dao.Impl;
+package by.itacademy.javaenterprise.seledtsova.dao.impl;
 
-import by.itacademy.javaenterprise.seledtsova.connection.PoolConnectionToDataBase;
 import by.itacademy.javaenterprise.seledtsova.dao.CustomerDao;
 import by.itacademy.javaenterprise.seledtsova.entity.Customer;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,6 +15,7 @@ import static org.postgresql.util.JdbcBlackHole.close;
 public class CustomerDaoImpl implements CustomerDao {
 
     private static final Logger logger = LoggerFactory.getLogger(CustomerDaoImpl.class);
+    private BasicDataSource basicDataSource;
 
     public static final String SELECT_FROM_CUSTOMER_TABLE = "SELECT * FROM Customers ORDER BY last_name LIMIT 100 OFFSET 3";
     public static final String DELETE_CUSTOMER_FROM_CUSTOMER_TABLES = "DELETE FROM Customers WHERE customer_id = ?";
@@ -23,41 +24,36 @@ public class CustomerDaoImpl implements CustomerDao {
 
     @Override
     public Customer addCustomer(Customer customer) {
+        Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
-            Connection connection = PoolConnectionToDataBase.getDataSource().getConnection();
+            connection = basicDataSource.getConnection();
             preparedStatement = connection.prepareStatement(ADD_NEW_CUSTOMER);
-            connection.setAutoCommit(false);
             preparedStatement.setInt(1, customer.getCustomerId());
             preparedStatement.setString(2, customer.getFirstName());
             preparedStatement.setString(3, customer.getLastName());
             preparedStatement.executeUpdate();
-            connection.commit();
         } catch (SQLException e) {
             logger.error("Not able to add  " + customer.getClass().getName(), e);
-        } finally {
-            close(preparedStatement);
         }
         return customer;
     }
 
-
     @Override
     public List<Customer> getAll() {
         List<Customer> customers = new ArrayList<>();
+        Connection connection = null;
         Statement statement = null;
         try {
-            Connection connection = PoolConnectionToDataBase.getDataSource().getConnection();
+            connection = basicDataSource.getConnection();
             statement = connection.createStatement();
             ResultSet resultSet = statement.executeQuery(SELECT_FROM_CUSTOMER_TABLE);
-            connection.setAutoCommit(false);
             while (resultSet.next()) {
                 Customer customer = new Customer();
                 customer.setCustomerId(resultSet.getInt("customer_id"));
                 customer.setFirstName(resultSet.getString("first_name"));
                 customer.setLastName(resultSet.getString("last_name"));
                 customers.add(customer);
-                connection.commit();
             }
         } catch (SQLException exception) {
             logger.error("Not able to add  customer", exception);
@@ -70,41 +66,41 @@ public class CustomerDaoImpl implements CustomerDao {
 
     @Override
     public void deleteCustomerById(Integer customerId) {
+        Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
-            Connection connection = PoolConnectionToDataBase.getDataSource().getConnection();
+            connection = basicDataSource.getConnection();
             preparedStatement = connection.prepareStatement(DELETE_CUSTOMER_FROM_CUSTOMER_TABLES);
-            connection.setAutoCommit(false);
             preparedStatement.setInt(1, customerId);
             int affectedRows = preparedStatement.executeUpdate();
-            connection.commit();
         } catch (SQLException e) {
             logger.error("Deleting customer from database failed", e);
-        } finally {
-            close(preparedStatement);
         }
     }
 
     @Override
     public Customer findCustomerByCustomerId(Integer customerId) {
+        Connection connection = null;
         PreparedStatement preparedStatement = null;
         Customer customer = new Customer();
         try {
-            Connection connection = PoolConnectionToDataBase.getDataSource().getConnection();
+            connection = basicDataSource.getConnection();
             preparedStatement = connection.prepareStatement(SELECT_FROM_CUSTOMER_TABLE_CUSTOMER_ID);
-            connection.setAutoCommit(false);
             preparedStatement.setInt(1, customerId);
             ResultSet resultSet = preparedStatement.executeQuery();
             resultSet.next();
             customer.setCustomerId(resultSet.getInt("customer_id"));
             customer.setFirstName(resultSet.getString("first_name"));
             customer.setLastName(resultSet.getString("last_name"));
-            connection.commit();
         } catch (SQLException e) {
             logger.error("SQL exception (request or table failed): " + e);
         } finally {
             close(preparedStatement);
         }
         return customer;
+    }
+
+    public void setBasicDataSource(BasicDataSource basicDataSource) {
+        this.basicDataSource = basicDataSource;
     }
 }
