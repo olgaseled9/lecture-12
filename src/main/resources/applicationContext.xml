@@ -16,17 +16,13 @@
         <property name="username" value="${database.user}"/>
         <property name="password" value="${database.password}"/>
     </bean>
-    <bean id="connectionToDataBase"
-          class="by.itacademy.javaenterprise.seledtsova.connection.ConnectionToDataBase">
-           <property name="basicDataSource" ref="databaseConfig"/>
-    </bean>
-     <bean id="customerService"
+    <bean id="customerService"
           class="by.itacademy.javaenterprise.seledtsova.dao.impl.CustomerDaoImpl">
-       <property name="basicDataSource" ref="databaseConfig"/>
+        <property name="basicDataSource" ref="databaseConfig"/>
     </bean>
     <bean id="orderService"
           class="by.itacademy.javaenterprise.seledtsova.dao.impl.OrderDaoImpl">
-      <property name="dataSource" ref="databaseConfig"/>
+        <property name="dataSource" ref="databaseConfig"/>
     </bean>
 </beans>
 
