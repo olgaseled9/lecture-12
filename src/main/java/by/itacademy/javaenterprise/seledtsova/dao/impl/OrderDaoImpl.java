@@ -15,25 +15,27 @@ import static org.postgresql.util.JdbcBlackHole.close;
 public class OrderDaoImpl implements OrderDao {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderDaoImpl.class);
+    private static final String SELECT_FROM_ORDER_TABLE = "SELECT order_id, customer_id, quantity FROM Orders ORDER BY order_id LIMIT 100 OFFSET 1;";
+    private static final String DELETE_ORDER_FROM_CUSTOMER_TABLES = "DELETE FROM Orders WHERE order_id = ?";
+    private static final String ADD_NEW_ORDER = "INSERT INTO Orders (order_id, customer_id, quantity) VALUES (?,?,?)";
     private DataSource dataSource;
 
-    public static final String SELECT_FROM_ORDER_TABLE = "SELECT order_id, customer_id, date_order FROM Orders ORDER BY order_id LIMIT 100 OFFSET 1;";
-    public static final String DELETE_ORDER_FROM_CUSTOMER_TABLES = "DELETE FROM Orders WHERE order_id = ?";
-    private static final String ADD_NEW_ORDER = "INSERT INTO Orders (order_id, customer_id, date_order) VALUES (?,?,?)";
-
     @Override
-    public Order addOrder(Order order) {
+    public Order saveOrder(Order order) {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
             connection = dataSource.getConnection();
             preparedStatement = connection.prepareStatement(ADD_NEW_ORDER);
-            preparedStatement.setInt(1, order.getOrderId());
-            preparedStatement.setInt(2, order.getCustomerId());
-            preparedStatement.setString(3, order.getDateOrder());
+            preparedStatement.setLong(1, order.getOrderId());
+            preparedStatement.setLong(2, order.getCustomerId());
+            preparedStatement.setInt(3, order.getQuantity());
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
             logger.error("Not able to add  " + order.getClass().getName(), e);
+        } finally {
+            close(preparedStatement);
+            close(connection);
         }
         return order;
     }
@@ -49,31 +51,34 @@ public class OrderDaoImpl implements OrderDao {
             ResultSet resultSet = statement.executeQuery(SELECT_FROM_ORDER_TABLE);
             while (resultSet.next()) {
                 Order order = new Order();
-                order.setOrderId(resultSet.getInt("order_id"));
-                order.setCustomerId(resultSet.getInt("customer_id"));
-                order.setDateOrder(resultSet.getString("date_order"));
+                order.setOrderId(resultSet.getLong("order_id"));
+                order.setCustomerId(resultSet.getLong("customer_id"));
+                order.setQuantity(resultSet.getInt("quantity"));
                 orders.add(order);
             }
         } catch (SQLException exception) {
             logger.error("Not able to add  order", exception);
-            throw new RuntimeException("Connection is not available", exception);
         } finally {
             close(statement);
+            close(connection);
         }
         return orders;
     }
 
     @Override
-    public void deleteOrderById(Integer orderId) {
+    public void deleteOrderById(Long orderId) {
         Connection connection = null;
         PreparedStatement preparedStatement = null;
         try {
             connection = dataSource.getConnection();
             preparedStatement = connection.prepareStatement(DELETE_ORDER_FROM_CUSTOMER_TABLES);
-            preparedStatement.setInt(1, orderId);
-            int affectedRows = preparedStatement.executeUpdate();
+            preparedStatement.setLong(1, orderId);
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
             logger.error("Deleting order from database failed", e);
+        } finally {
+            close(preparedStatement);
+            close(connection);
         }
     }
 
